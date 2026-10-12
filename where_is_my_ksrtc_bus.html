@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#c8102e">
+<title>Where Is My KSRTC Bus?</title>
+<link rel="preconnect" href="https://unpkg.com">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
+<style>
+:root{--red:#c8102e;--red2:#ef233c;--navy:#10244e;--ink:#17233d;--muted:#64748b;--line:#e4eaf2;--bg:#f4f7fb;--green:#059669;--amber:#d97706}
+*{box-sizing:border-box}body{margin:0;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;color:var(--ink);background:var(--bg)}
+header{background:linear-gradient(110deg,#a8071f,var(--red));color:#fff;padding:13px 22px;display:flex;align-items:center;gap:14px;justify-content:space-between;box-shadow:0 3px 14px #8b102733;position:relative;z-index:1000}
+.brand{display:flex;align-items:center;gap:12px;min-width:240px}.brand-mark{width:46px;height:46px;border:2px solid #fff;border-radius:50%;display:grid;place-items:center;font-size:25px}.brand strong{display:block;font-size:23px;letter-spacing:.4px}.brand small{display:block;font-size:11px;opacity:.9}
+nav{display:flex;gap:7px;flex-wrap:wrap}nav button{background:transparent;color:white;border:1px solid #ffffff35;padding:10px 12px;border-radius:10px;cursor:pointer;font-weight:650}nav button.active,nav button:hover{background:#ffffff20}
+main{display:grid;grid-template-columns:350px minmax(0,1fr);min-height:calc(100vh - 74px)}
+.sidebar{background:#fff;border-right:1px solid var(--line);padding:20px;overflow:auto}.sidebar h1{font-size:25px;line-height:1.15;margin:0 0 8px;color:var(--navy)}.intro{font-size:13px;line-height:1.5;color:var(--muted);margin:0 0 18px}
+.field-row{display:grid;grid-template-columns:1fr 1fr;gap:9px}.field label{display:block;font-size:12px;font-weight:700;margin-bottom:6px}.field select,.searchbox input{width:100%;border:1px solid #d9e1ed;border-radius:10px;padding:12px 10px;background:white;color:var(--ink);min-width:0}
+.swap{align-self:end;border:0;background:#edf3ff;color:#1d4ed8;border-radius:9px;height:42px;cursor:pointer;font-size:20px}
+.primary{width:100%;border:0;background:var(--red2);color:white;font-weight:800;padding:13px;border-radius:11px;margin:13px 0;cursor:pointer;font-size:15px}.primary:hover{filter:brightness(.95)}
+.quick-actions{display:flex;gap:7px;margin:2px 0 18px}.quick-actions button{flex:1;border:1px solid var(--line);background:#f8fafc;padding:9px 6px;border-radius:9px;font-size:12px;font-weight:700;cursor:pointer}.quick-actions button.selected{background:#fff0f2;border-color:#ffc1cb;color:var(--red)}
+.section-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:10px 0}.section-head h2{font-size:15px;margin:0;color:var(--navy)}.section-head span{font-size:11px;color:var(--muted)}
+.bus-list{display:grid;gap:9px}.bus-card{border:1px solid var(--line);border-radius:13px;padding:12px;display:grid;grid-template-columns:1fr auto;gap:7px;cursor:pointer;background:white;box-shadow:0 2px 7px #10244e06}.bus-card:hover,.bus-card.chosen{border-color:#f18a99;box-shadow:0 4px 15px #c8102e12}.bus-name{font-size:13px;font-weight:800;color:var(--navy)}.bus-meta{font-size:11px;color:var(--muted);margin-top:4px}.bus-eta{font-size:12px;font-weight:800;color:var(--green);margin-top:7px}.pill{font-size:10px;font-weight:800;padding:5px 8px;border-radius:20px;white-space:nowrap;align-self:start}.pill.live{background:#d1fae5;color:#047857}.pill.delay{background:#fef3c7;color:#92400e}.pill.sample{background:#e0e7ff;color:#3730a3}
+.map-area{min-width:0;position:relative;display:grid;grid-template-rows:minmax(390px,60vh) auto}.map-top{position:absolute;top:14px;left:14px;right:14px;z-index:500;display:flex;gap:8px;align-items:flex-start;pointer-events:none}.searchbox{pointer-events:auto;background:white;border-radius:12px;box-shadow:0 3px 18px #17233d20;padding:5px;max-width:540px;width:100%;display:flex}.searchbox input{border:0;outline:0}.map-chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;pointer-events:auto}.map-chips button{border:1px solid #e0e7ef;background:white;padding:8px 10px;border-radius:20px;font-size:11px;font-weight:750;box-shadow:0 2px 8px #17233d13;cursor:pointer}.map-chips button.on{background:#1d4ed8;color:white;border-color:#1d4ed8}
+#map{height:100%;min-height:390px;width:100%;z-index:1}.map-status{position:absolute;z-index:400;bottom:13px;left:13px;background:#ffffffed;border:1px solid var(--line);border-radius:10px;padding:9px 11px;font-size:11px;box-shadow:0 2px 10px #17233d12;max-width:calc(100% - 26px)}.status-dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#d97706;margin-right:6px}
+.details{padding:14px;display:grid;grid-template-columns:minmax(0,1.4fr) minmax(230px,.8fr);gap:12px;background:#f8fafc;border-top:1px solid var(--line)}.panel{background:white;border:1px solid var(--line);border-radius:15px;padding:15px;min-width:0;box-shadow:0 2px 8px #10244e05}.panel h3{font-size:15px;color:var(--navy);margin:0 0 12px}.route-summary{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;color:var(--muted);font-size:11px;margin-bottom:15px}.timeline{display:flex;align-items:flex-start;overflow-x:auto;padding:4px 0 12px}.stop{flex:1;min-width:78px;position:relative;text-align:center;font-size:11px}.stop:not(:last-child):after{content:"";height:3px;background:#2563eb;position:absolute;top:7px;left:50%;width:100%;z-index:0}.stop-dot{display:block;width:14px;height:14px;border-radius:50%;border:3px solid #2563eb;background:white;margin:0 auto 9px;position:relative;z-index:1}.stop:first-child .stop-dot{background:#059669;border-color:#059669}.stop:last-child .stop-dot{background:var(--red);border-color:var(--red)}.stop strong{display:block;font-size:11px;color:var(--navy)}.stop small{display:block;color:var(--muted);margin-top:4px;line-height:1.4}.places{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:9px}.place{background:#f8fafc;border:1px solid var(--line);border-radius:10px;padding:9px 5px;text-align:center;font-size:10px;cursor:pointer}.place span{display:grid;place-items:center;font-size:22px;margin-bottom:5px}.place:hover{border-color:#f18a99;background:#fff7f8}.info-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.info-item{background:#f8fafc;border-radius:10px;padding:10px}.info-item small{display:block;color:var(--muted);font-size:10px}.info-item strong{display:block;color:var(--navy);font-size:13px;margin-top:4px}.alert-btn{width:100%;margin-top:12px;background:var(--red);color:#fff;border:0;border-radius:10px;padding:12px;font-weight:800;cursor:pointer}.alert-btn.enabled{background:#047857}.notice{font-size:11px;line-height:1.5;color:#854d0e;background:#fffbeb;border:1px solid #fde68a;padding:10px;border-radius:10px;margin-top:10px}
+footer{font-size:11px;color:var(--muted);padding:13px 18px;text-align:center;background:white;border-top:1px solid var(--line)}
+.leaflet-popup-content-wrapper{border-radius:12px}.popup-title{font-weight:800;color:var(--navy);margin-bottom:5px}.popup-line{font-size:12px;margin:3px 0}.bus-pin{background:#c8102e;border:2px solid white;border-radius:50%;color:white;width:29px;height:29px;display:grid;place-items:center;font-size:15px;box-shadow:0 2px 8px #17233d55}
+@media(max-width:1000px){main{grid-template-columns:310px minmax(0,1fr)}.details{grid-template-columns:1fr}.map-area{grid-template-rows:minmax(380px,55vh) auto}.places{grid-template-columns:repeat(5,minmax(0,1fr))}.brand{min-width:190px}.brand strong{font-size:19px}nav button{padding:8px}}
+@media(max-width:720px){header{padding:10px 13px;align-items:flex-start;flex-direction:column;gap:10px}.brand-mark{width:39px;height:39px}.brand strong{font-size:19px}nav{width:100%;overflow-x:auto;flex-wrap:nowrap;padding-bottom:2px}nav button{white-space:nowrap;font-size:12px}.sidebar{border-right:0;padding:17px}.sidebar h1{font-size:24px}main{display:flex;flex-direction:column}.map-area{display:flex;flex-direction:column}.map-top{position:relative;top:auto;left:auto;right:auto;display:block;padding:10px;background:#edf3fa}.searchbox{max-width:none}.map-chips{flex-wrap:nowrap;overflow-x:auto;padding-bottom:4px}.map-chips button{white-space:nowrap}#map{height:48vh;min-height:330px}.map-status{bottom:auto;top:115px}.details{padding:10px;gap:10px}.panel{padding:12px}.places{grid-template-columns:repeat(3,minmax(0,1fr))}.field-row{grid-template-columns:1fr 38px 1fr}.field select{font-size:12px;padding:11px 5px}.swap{font-size:17px}.bus-card{padding:11px}.map-area{order:2}.sidebar{order:1}.details{order:3}}
+@media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;transition:none!important}}
+</style>
+</head>
+<body>
+<header>
+  <div class="brand"><div class="brand-mark" aria-hidden="true">🚌</div><div><strong>KSRTC TRACKER</strong><small>Karnataka State Road Transport Corporation</small></div></div>
+  <nav aria-label="Main navigation">
+    <button class="active" data-scroll="top">⌂ Home</button><button data-scroll="map">◎ Live Map</button><button data-scroll="routes">⇄ Routes</button><button data-scroll="places">⌖ Hassan Places</button><button id="notifyNav">♧ Alerts</button>
+  </nav>
+</header>
+<main id="top">
+  <aside class="sidebar">
+    <h1>Where Is My KSRTC Bus?</h1>
+    <p class="intro">Explore Karnataka routes, view sample bus positions, check estimated journey times and set delay alerts.</p>
+    <div class="field-row">
+      <div class="field"><label for="origin">From (Origin)</label><select id="origin"></select></div>
+      <button class="swap" id="swap" title="Swap origin and destination" aria-label="Swap origin and destination">⇄</button>
+      <div class="field"><label for="destination">To (Destination)</label><select id="destination"></select></div>
+    </div>
+    <button class="primary" id="searchBuses">⌕ Search Buses</button>
+    <div class="quick-actions"><button class="selected" data-filter="all">▣ All Buses</button><button data-filter="live">● On time</button><button data-filter="delay">◷ Delayed</button></div>
+    <div class="section-head"><h2 id="resultsTitle">Available Buses</h2><span id="resultCount">5 services</span></div>
+    <div class="bus-list" id="busList"></div>
+    <div class="notice"><strong>Demo mode:</strong> bus coordinates, departure times and ETAs are illustrative sample data, not verified KSRTC GPS feeds. Actual live tracking requires an authorized data source.</div>
+  </aside>
+  <section class="map-area" id="mapSection">
+    <div class="map-top">
+      <div style="width:100%">
+        <div class="searchbox"><span style="padding:10px 8px;color:#2563eb">⌕</span><input id="placeSearch" placeholder="Search a Karnataka place (e.g., Mysuru, Belur, Hassan)" aria-label="Search a Karnataka place"></div>
+        <div class="map-chips" id="routeChips"><button class="on" data-route="all">All Routes</button><button data-route="hassan">Hassan ↔ Bengaluru</button><button data-route="mysuru">Mysuru ↔ Bengaluru</button><button data-route="coastal">Coastal Karnataka</button><button data-route="north">North Karnataka</button></div>
+      </div>
+    </div>
+    <div id="map" role="application" aria-label="Interactive map of Karnataka bus routes"></div>
+    <div class="map-status"><span class="status-dot"></span><strong id="mapStatus">Sample bus positions shown</strong> · Select a bus card or map marker for details.</div>
+    <div class="details" id="routes">
+      <div class="panel">
+        <h3 id="routeTitle">Route Details: Hassan → Bengaluru</h3>
+        <div class="route-summary"><span id="distance">Approx. 185 km · illustrative route</span><span id="travelTime">Est. journey: 4 hr 15 min</span></div>
+        <div class="timeline" id="timeline"></div>
+        <div id="places" style="border-top:1px solid var(--line);padding-top:13px;margin-top:2px">
+          <div class="section-head"><h2>Nearby Places in Hassan</h2><span>Tap to locate</span></div>
+          <div class="places" id="placeGrid"></div>
+        </div>
+      </div>
+      <div class="panel">
+        <h3>Selected Bus Information</h3>
+        <div class="info-grid" id="busInfo"></div>
+        <button class="alert-btn" id="alertButton">♧ Set Alert for This Bus</button>
+        <div class="notice" style="margin-top:10px;background:#eff6ff;border-color:#bfdbfe;color:#1e40af">Browser notifications require permission and usually work on HTTPS or localhost. Alerts in this demo are local to this browser session.</div>
+      </div>
+    </div>
+  </section>
+</main>
+<footer>Unofficial demonstration project · Map data © OpenStreetMap contributors · Not affiliated with KSRTC · Sample schedules are not official.</footer>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+<script>
+const places = [
+ {name:"Hassan",lat:13.0033,lng:76.1004},{name:"Bengaluru",lat:12.9716,lng:77.5946},{name:"Mysuru",lat:12.2958,lng:76.6394},
+ {name:"Mangaluru",lat:12.9141,lng:74.8560},{name:"Udupi",lat:13.3409,lng:74.7421},{name:"Shivamogga",lat:13.9299,lng:75.5681},
+ {name:"Chikkamagaluru",lat:13.3161,lng:75.7720},{name:"Tumakuru",lat:13.3379,lng:77.1173},{name:"Chitradurga",lat:14.2251,lng:76.3980},
+ {name:"Davanagere",lat:14.4644,lng:75.9218},{name:"Hubballi",lat:15.3647,lng:75.1240},{name:"Dharwad",lat:15.4589,lng:75.0078},
+ {name:"Belagavi",lat:15.8497,lng:74.4977},{name:"Vijayapura",lat:16.8302,lng:75.7100},{name:"Kalaburagi",lat:17.3297,lng:76.8343},
+ {name:"Ballari",lat:15.1394,lng:76.9214},{name:"Raichur",lat:16.2120,lng:77.3439},{name:"Haveri",lat:14.7951,lng:75.3991},
+ {name:"Madikeri",lat:12.4244,lng:75.7382},{name:"Kolar",lat:13.1367,lng:78.1292},{name:"Mandya",lat:12.5218,lng:76.8951},
+ {name:"Hunsur",lat:12.3030,lng:76.2920},{name:"Sakleshpur",lat:12.9416,lng:75.7840},{name:"Belur",lat:13.1629,lng:75.8650},
+ {name:"Arsikere",lat:13.3145,lng:76.2570},{name:"Tiptur",lat:13.2588,lng:76.4770},{name:"Nelamangala",lat:13.0997,lng:77.3936},
+ {name:"Channarayapatna",lat:12.9068,lng:76.3898},{name:"Holenarasipura",lat:12.7866,lng:76.2430},{name:"Alur",lat:12.9780,lng:75.9900}
+];
+const hassanStops = [
+ {name:"Hassan Bus Stand",time:"08:30 AM",note:"Origin"},{name:"Arsikere",time:"09:10 AM",note:"5 min halt"},
+ {name:"Tiptur",time:"10:00 AM",note:"10 min halt"},{name:"Tumakuru",time:"11:15 AM",note:"10 min halt"},
+ {name:"Nelamangala",time:"12:20 PM",note:"5 min halt"},{name:"Bengaluru",time:"12:45 PM",note:"Estimated arrival"}
+];
+const buses = [
+ {id:"KA-57-F-2340",name:"Airavat Club Class",type:"AC · Volvo-style demo",origin:"Hassan",destination:"Bengaluru",lat:13.18,lng:76.82,speed:68,eta:"1 hr 20 min",status:"On time",departure:"08:30 AM",arrival:"12:45 PM",next:"Tumakuru",route:"hassan"},
+ {id:"KA-57-F-5678",name:"Ashwamedha",type:"Express service",origin:"Hassan",destination:"Bengaluru",lat:13.30,lng:76.48,speed:54,eta:"2 hr 10 min",status:"On time",departure:"09:00 AM",arrival:"01:15 PM",next:"Tiptur",route:"hassan"},
+ {id:"KA-57-F-9012",name:"EV Power Plus",type:"Electric demo service",origin:"Mysuru",destination:"Bengaluru",lat:12.52,lng:76.90,speed:61,eta:"1 hr 45 min",status:"On time",departure:"10:15 AM",arrival:"02:30 PM",next:"Mandya",route:"mysuru"},
+ {id:"KA-13-F-4455",name:"Karnataka Sarige",type:"Ordinary service",origin:"Hassan",destination:"Bengaluru",lat:13.09,lng:77.39,speed:29,eta:"2 hr 40 min",status:"Delayed 35 min",departure:"08:00 AM",arrival:"02:15 PM",next:"Nelamangala",route:"hassan"},
+ {id:"KA-19-F-7788",name:"Rajahamsa (AC Sleeper)",type:"AC sleeper demo",origin:"Mangaluru",destination:"Bengaluru",lat:12.91,lng:75.55,speed:48,eta:"6 hr 20 min",status:"On time",departure:"09:30 PM",arrival:"04:00 AM",next:"Sakleshpur",route:"coastal"}
+];
+const localPlaces = [
+ {name:"Hassan Bus Stand",emoji:"🚌",lat:13.0033,lng:76.1004},{name:"Arsikere",emoji:"🚉",lat:13.3145,lng:76.2570},
+ {name:"Holenarasipura",emoji:"🌳",lat:12.7866,lng:76.2430},{name:"Belur",emoji:"🛕",lat:13.1629,lng:75.8650},
+ {name:"Halebidu",emoji:"🏛️",lat:13.2128,lng:75.9947},{name:"Sakleshpur",emoji:"⛰️",lat:12.9416,lng:75.7840},
+ {name:"Alur",emoji:"🌿",lat:12.9780,lng:75.9900},{name:"Arakalgudu",emoji:"🏘️",lat:12.7590,lng:76.0610},
+ {name:"Channarayapatna",emoji:"📍",lat:12.9068,lng:76.3898}
+];
+const byName = n => places.find(p=>p.name.toLowerCase()===n.toLowerCase()) || places[0];
+const originSel=document.getElementById("origin"), destSel=document.getElementById("destination");
+places.forEach(p=>{originSel.add(new Option(p.name,p.name));destSel.add(new Option(p.name,p.name))});
+originSel.value="Hassan";destSel.value="Bengaluru";
+const map=L.map("map",{zoomControl:false,preferCanvas:true}).setView([13.7,76.4],7);
+L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:18,attribution:'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'}).addTo(map);
+L.control.zoom({position:"bottomright"}).addTo(map);
+const markerLayer=L.layerGroup().addTo(map), routeLayer=L.layerGroup().addTo(map), placeLayer=L.layerGroup().addTo(map);
+let selectedBus=buses[0], activeFilter="all", activeRoute="all", alertEnabled=false;
+function busIcon(){return L.divIcon({className:"",html:'<div class="bus-pin">🚌</div>',iconSize:[29,29],iconAnchor:[14,14]})}
+function popupHTML(b){return `<div class="popup-title">${b.name}</div><div class="popup-line"><b>${b.id}</b></div><div class="popup-line">${b.origin} → ${b.destination}</div><div class="popup-line">Sample speed: ${b.speed} km/h</div><div class="popup-line">Estimated arrival: ${b.eta}</div><div class="popup-line">${b.status}</div><div class="popup-line" style="color:#64748b">Illustrative demo data, not live GPS</div>`}
+function drawMap(){
+ markerLayer.clearLayers();routeLayer.clearLayers();placeLayer.clearLayers();
+ const shown=buses.filter(b=>(activeFilter==="all"||(activeFilter==="live"&&!b.status.includes("Delayed"))||(activeFilter==="delay"&&b.status.includes("Delayed")))&&(activeRoute==="all"||b.route===activeRoute));
+ shown.forEach(b=>{const m=L.marker([b.lat,b.lng],{icon:busIcon()}).bindPopup(popupHTML(b));m.on("click",()=>selectBus(b.id,false));m.addTo(markerLayer)});
+ const start=byName(originSel.value), end=byName(destSel.value);
+ const routePoints=activeRoute==="all"||activeRoute==="hassan"?[start,byName("Arsikere"),byName("Tiptur"),byName("Tumakuru"),byName("Nelamangala"),end]:[start,end];
+ L.polyline(routePoints.map(p=>[p.lat,p.lng]),{color:"#2563eb",weight:5,opacity:.85,dashArray:"10 7"}).addTo(routeLayer);
+ L.circleMarker([start.lat,start.lng],{radius:7,color:"#059669",fillColor:"#10b981",fillOpacity:1}).bindTooltip("Origin: "+start.name).addTo(routeLayer);
+ L.circleMarker([end.lat,end.lng],{radius:7,color:"#c8102e",fillColor:"#ef233c",fillOpacity:1}).bindTooltip("Destination: "+end.name).addTo(routeLayer);
+ localPlaces.forEach(p=>L.circleMarker([p.lat,p.lng],{radius:4,color:"#64748b",fillColor:"#fff",fillOpacity:.9,weight:2}).bindTooltip(p.name).addTo(placeLayer));
+ document.getElementById("mapStatus").textContent="Sample bus positions shown";
+}
+function renderBusList(){
+ const shown=buses.filter(b=>(activeFilter==="all"||(activeFilter==="live"&&!b.status.includes("Delayed"))||(activeFilter==="delay"&&b.status.includes("Delayed")))&&(activeRoute==="all"||b.route===activeRoute));
+ document.getElementById("resultCount").textContent=shown.length+" services";
+ document.getElementById("resultsTitle").textContent=`${originSel.value} → ${destSel.value}`;
+ const list=document.getElementById("busList");list.innerHTML="";
+ shown.forEach(b=>{const el=document.createElement("div");el.className="bus-card"+(b.id===selectedBus.id?" chosen":"");el.tabIndex=0;el.setAttribute("role","button");el.innerHTML=`<div><div class="bus-name">🚌 ${b.name}</div><div class="bus-meta">${b.id} · ${b.departure} → ${b.arrival}</div><div class="bus-eta">${b.status.includes("Delayed")?"Delay: 35 min":"ETA: "+b.eta}</div></div><span class="pill ${b.status.includes("Delayed")?"delay":"live"}">${b.status.includes("Delayed")?"Delayed":"On time"}</span>`;el.onclick=()=>selectBus(b.id);el.onkeydown=e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();selectBus(b.id)}};list.appendChild(el)});
+}
+function renderTimeline(){
+ const names=selectedBus.route==="mysuru"?["Mysuru","Mandya","Maddur","Ramanagara","Bengaluru"]:selectedBus.route==="coastal"?["Mangaluru","Bantwal","Sakleshpur","Kunigal","Bengaluru"]:[originSel.value,"Arsikere","Tiptur","Tumakuru","Nelamangala",destSel.value];
+ const times=selectedBus.route==="hassan"?hassanStops.map(s=>s.time):["09:00 AM","10:00 AM","11:00 AM","12:00 PM","01:00 PM"];
+ const timeline=document.getElementById("timeline");timeline.innerHTML="";
+ names.forEach((n,i)=>{const d=document.createElement("div");d.className="stop";d.innerHTML=`<span class="stop-dot"></span><strong>${n}</strong><small>${times[i]||"Estimated"}<br>${i===0?"Departed":i===names.length-1?"Estimated arrival": "Estimated stop"}</small>`;timeline.appendChild(d)});
+ document.getElementById("routeTitle").textContent=`Route Details: ${selectedBus.origin} → ${selectedBus.destination}`;
+ document.getElementById("distance").textContent=selectedBus.route==="hassan"?"Approx. 185 km · illustrative route":"Approx. route distance varies";
+ document.getElementById("travelTime").textContent="Est. journey: "+(selectedBus.route==="coastal"?"8 hr 30 min":"4 hr 15 min");
+}
+function renderBusInfo(){
+ const info=document.getElementById("busInfo");
+ const rows=[["Bus number",selectedBus.id],["Service",selectedBus.name],["Sample speed",selectedBus.speed+" km/h"],["Next stop",selectedBus.next],["ETA",selectedBus.eta],["Status",selectedBus.status]];
+ info.innerHTML=rows.map(r=>`<div class="info-item"><small>${r[0]}</small><strong>${r[1]}</strong></div>`).join("");
+ const btn=document.getElementById("alertButton");btn.classList.toggle("enabled",alertEnabled);btn.textContent=alertEnabled?"✓ Alert enabled for this bus":"♧ Set Alert for This Bus";
+}
+function selectBus(id,pan=true){selectedBus=buses.find(b=>b.id===id)||buses[0];renderBusList();renderTimeline();renderBusInfo();if(pan)map.setView([selectedBus.lat,selectedBus.lng],9);alertEnabled=false}
+function renderPlaces(){const grid=document.getElementById("placeGrid");grid.innerHTML="";localPlaces.forEach(p=>{const d=document.createElement("button");d.className="place";d.innerHTML=`<span>${p.emoji}</span>${p.name}`;d.onclick=()=>{map.setView([p.lat,p.lng],12);L.popup().setLatLng([p.lat,p.lng]).setContent(`<b>${p.name}</b><br><small>Hassan district / nearby local place</small>`).openOn(map)};grid.appendChild(d)})}
+function searchRoute(){const start=byName(originSel.value),end=byName(destSel.value);selectedBus=buses.find(b=>b.origin===start.name&&b.destination===end.name)||buses.find(b=>b.destination===end.name)||buses[0];renderBusList();renderTimeline();renderBusInfo();drawMap();map.fitBounds([[start.lat,start.lng],[end.lat,end.lng]],{padding:[45,45],maxZoom:9})}
+document.getElementById("searchBuses").addEventListener("click",searchRoute);
+document.getElementById("swap").addEventListener("click",()=>{const a=originSel.value;originSel.value=destSel.value;destSel.value=a;searchRoute()});
+document.querySelectorAll("[data-filter]").forEach(btn=>btn.addEventListener("click",()=>{activeFilter=btn.dataset.filter;document.querySelectorAll("[data-filter]").forEach(x=>x.classList.toggle("selected",x===btn));renderBusList();drawMap()}));
+document.querySelectorAll("[data-route]").forEach(btn=>btn.addEventListener("click",()=>{activeRoute=btn.dataset.route;document.querySelectorAll("[data-route]").forEach(x=>x.classList.toggle("on",x===btn));renderBusList();drawMap()}));
+document.querySelectorAll("[data-scroll]").forEach(btn=>btn.addEventListener("click",()=>{const id=btn.dataset.scroll;if(id==="map")document.getElementById("mapSection").scrollIntoView({behavior:"smooth"});else if(id==="routes")document.getElementById("routes").scrollIntoView({behavior:"smooth"});else if(id==="places")document.getElementById("places").scrollIntoView({behavior:"smooth"});else window.scrollTo({top:0,behavior:"smooth"})}));
+document.getElementById("placeSearch").addEventListener("keydown",e=>{if(e.key==="Enter"){const q=e.target.value.trim().toLowerCase();const p=places.find(x=>x.name.toLowerCase().includes(q));if(p){map.setView([p.lat,p.lng],11);L.popup().setLatLng([p.lat,p.lng]).setContent(`<b>${p.name}</b>`).openOn(map)}else alert("Place not found in this demo list. Try Hassan, Mysuru, Belur or Bengaluru.")}});
+document.getElementById("alertButton").addEventListener("click",async()=>{
+ if(!("Notification" in window)){alert("This browser does not support desktop notifications. The selected bus alert is saved for this session.");alertEnabled=true;renderBusInfo();return}
+ if(Notification.permission==="default"){try{await Notification.requestPermission()}catch(e){}}
+ if(Notification.permission==="granted"){new Notification("KSRTC Bus Alert Enabled",{body:`You'll see demo alerts for ${selectedBus.id}. Actual service changes need a connected live data feed.`});alertEnabled=true;renderBusInfo()}
+ else alert("Notifications were not enabled. You can allow them in your browser site settings.");
+});
+document.getElementById("notifyNav").addEventListener("click",()=>document.getElementById("alertButton").click());
+document.getElementById("places").addEventListener("click",e=>{});
+renderPlaces();renderTimeline();renderBusInfo();renderBusList();drawMap();
+// GPS can locate the user's device; it does not locate a bus.
+if("geolocation" in navigator){navigator.geolocation.getCurrentPosition(pos=>{const me=L.circleMarker([pos.coords.latitude,pos.coords.longitude],{radius:8,color:"#1d4ed8",fillColor:"#60a5fa",fillOpacity:1}).bindPopup("Your device location (GPS)");me.addTo(map)},()=>{}, {enableHighAccuracy:false,timeout:4000,maximumAge:60000})}
+// Refresh the demo UI periodically to give a live-dashboard feel; this does not create real bus GPS data.
+setInterval(()=>{const stamp=new Date().toLocaleTimeString([], {hour:"2-digit",minute:"2-digit",second:"2-digit"});document.getElementById("mapStatus").textContent="Demo refreshed "+stamp+" · positions are simulated"},30000);
+window.addEventListener("resize",()=>setTimeout(()=>map.invalidateSize(),150));
+</script>
+</body>
+</html>
